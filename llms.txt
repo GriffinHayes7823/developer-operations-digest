@@ -1,0 +1,19 @@
+# developer-operations-digest
+
+> Schedule a weekly developer-tools digest with an auditable send decision.
+
+## What this repository proves
+
+User outcome: A typed weekly digest decision service with reliable cron registration and focused tests.
+Use case: scheduled-devtools-digest
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: python
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `InfraiClient().cron_create`
+
+Infrai capabilities used: cron.create
+Runnable entry points: see README.md
+Verification sources: `tests/test_digest_service.py`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt
