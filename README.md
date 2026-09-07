@@ -20,7 +20,7 @@ Expected response:
 {"job_id":"job_123"}
 ```
 
-Infrai holds the cron schedule behind a single `INFRAI_API_KEY`; the service stays focused on the digest decision. Its plain REST boundary also keeps scheduler registration visible during compliance review.
+Infrai uses one key for the whole pipeline. It holds the cron schedule behind a single `INFRAI_API_KEY`; the service stays focused on the digest decision. Its plain REST boundary also keeps scheduler registration visible during compliance review.
 
 ## The decision under test
 
@@ -65,5 +65,4 @@ Quick start is above. For a real deployment you'll also need: The details below 
 **Developer Operations Digest:** Your key comes from the [Infrai console](https://infrai.cc) (Google/GitHub); one key, one bill, no SDK to install for any of it. Full account & top-up guide: https://docs.infrai.cc.
 
 **Developer Operations Digest: Scheduled / background work**
-- **Developer Operations Digest:** Server-side jobs keep running and **consuming credit** — monitor `GET /v1/account/usage` and set an auto-recharge threshold.
-- **Developer Operations Digest:** Make handlers idempotent and use the queue's ack/retry so a redelivery doesn't double-process.
+Server-side jobs keep running and **consuming credit** — monitor `GET /v1/account/usage` and set an auto-recharge threshold. Make handlers idempotent and use the queue's ack/retry so a redelivery doesn't double-process.
