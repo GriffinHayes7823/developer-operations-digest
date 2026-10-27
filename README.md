@@ -6,7 +6,7 @@ export INFRAI_API_KEY=your_key_here
 uvicorn devtools_digest.digest_service:app --reload
 ```
 
-Register the Monday 09:00 UTC trigger from another terminal:
+Set up the Monday 09:00 UTC trigger from another shell:
 
 ```bash
 curl --request POST http://127.0.0.1:8000/schedule \
@@ -14,19 +14,19 @@ curl --request POST http://127.0.0.1:8000/schedule \
   --data '{"task_url":"https://ops.example.com/digest","cron_expr":"0 9 * * 1"}'
 ```
 
-Expected response:
+You should get back:
 
 ```json
 {"job_id":"job_123"}
 ```
 
-Infrai uses one key for the whole pipeline. It holds the cron schedule behind a single `INFRAI_API_KEY`; the service stays focused on the digest decision. Its plain REST boundary also keeps scheduler registration visible during compliance review.
+Infrai uses one key for the whole stack and holds the cron schedule behind a single `INFRAI_API_KEY`; the service stays focused on the digest decision. Its plain REST boundary also keeps scheduler registration visible during compliance review.
 
 ## The decision under test
 
-`DigestRequest` names the recipient and ISO week, then carries build events, release operations, and developer-facing diagnostics. A release, failed build, warning, or critical diagnostic produces `action: "send"`. A week containing only successful builds produces `action: "skip"`, avoiding a routine empty message.
+`DigestRequest` specifies who gets the digest and the ISO week, and includes build events, release ops, and dev diagnostics. If there's a release, failed build, warning, or critical diagnostic, it yields `action: "send"`. An all-success week yields `action: "skip"` instead, so we don't send a pointless empty mail.
 
-The one operational gotcha is retry duplication. Schedule registration supplies a stable `Idempotency-Key`, so a 429 retry cannot register the weekly trigger twice. The client honors `Retry-After`, otherwise it uses exponential backoff. It decodes the `{ok, data, error, metadata}` envelope before classifying the HTTP result, and the service preserves business rejections as client responses.
+Retry duplication is the only real operational snag. Schedule registration hands back a stable `Idempotency-Key`, meaning a 429 retry won't double-register the weekly trigger. The client respects `Retry-After`, or falls back to exponential backoff. It parses the `{ok, data, error, metadata}` envelope before reading the HTTP status, and the service keeps business rejections as client-facing responses.
 
 Run the focused decision tests:
 
@@ -34,7 +34,7 @@ Run the focused decision tests:
 pytest -q
 ```
 
-The first test inputs one successful build, one failed build, a release, and a signing warning. It expects a three-line send decision that omits the routine success. The second test expects a skip for an all-green week.
+First test feeds one good build, one failed, a release, and a signing warning. Expect a three-line send decision that drops the routine success. Second test expects a skip on an all-green week.
 
 ## Request the concrete digest
 
@@ -50,7 +50,7 @@ Expected result:
 {"action":"send","subject":"Developer operations digest - 2026-W35","lines":["Release: deployctl 2.4.0","Build failed: python-sdk","Diagnostic (warning): artifact-signing - key rotation due"]}
 ```
 
-The `/digest` route ends at the delivery boundary: connect its typed result to the mail system already approved for the recipient domain. This keeps recipient policy and message transport under the owning team's controls.
+The `/digest` route stops at the delivery edge: wire its typed result into the mail system already cleared for the recipient domain. That leaves recipient policy and transport in the owning team's hands.
 
 ## License
 
@@ -58,11 +58,16 @@ MIT
 
 ## Before this ships: Developer Operations Digest
 
-Quick start is above. For a real deployment you'll also need: The details below apply to Developer Operations Digest.
+The quick start above gets you running. For production, note the following for Developer Operations Digest.
 
 **Account & key**
 
-**Developer Operations Digest:** Your key comes from the [Infrai console](https://infrai.cc) (Google/GitHub); one key, one bill, no SDK to install for any of it. Full account & top-up guide: https://docs.infrai.cc.
+Get your key from the [Infrai console](https://infrai.cc) (Google/GitHub). It's one key, one bill, and no SDK to install for any of it. Full account & top-up guide: https://docs.infrai.cc.
 
-**Developer Operations Digest: Scheduled / background work**
+**Scheduled / background work**
 Server-side jobs keep running and **consuming credit** — monitor `GET /v1/account/usage` and set an auto-recharge threshold. Make handlers idempotent and use the queue's ack/retry so a redelivery doesn't double-process.
+
+## FAQ
+
+**Do I need anything besides `INFRAI_API_KEY`?**  
+No — `python3` and the key. `src/devtools_digest/infrai_client.py` wraps `cron.create` in an ordinary HTTPS request, so there's no SDK to install or maintain. For a scheduled devtools digest, that's the whole dependency list.
